@@ -14,8 +14,8 @@ var database = firebase.database();
 var trainName = "";
 var destination = "";
 var trainTime = "";
-var frequency = "";
-var minutesAway = "";
+var frequency = 0;
+
 
  $('#submitButton').on('click', function(event) {
   	event.preventDefault();
@@ -25,14 +25,39 @@ var minutesAway = "";
   	trainTime = $('#inputTrainTime').val().trim();
   	frequency = $('#inputFrequency').val().trim();
 
-  	var newTrainInfo = {
+		// First Time (pushed back 1 year to make sure it comes before current time)
+		var firstTimeConverted = moment(trainTime,"hh:mm").subtract(1, "years");
+		console.log(firstTimeConverted);
+
+		// Current Time
+		var currentTime = moment();
+		console.log("CURRENT TIME: " + moment(currentTime).format("hh:mm"));
+
+		// Difference between the times
+		var diffTime = moment().diff(moment(firstTimeConverted), "minutes");
+		console.log("DIFFERENCE IN TIME: " + diffTime);
+
+		// Time apart (remainder)
+		var tRemainder = diffTime % frequency;
+		console.log(tRemainder);
+
+		// Minute Until Train
+		var tMinutesTillTrain = frequency - tRemainder;
+		console.log("MINUTES TILL TRAIN: " + tMinutesTillTrain);
+		var comingTrain = tMinutesTillTrain;
+
+		// Next Train
+		var nextTrainTime = moment().add(tMinutesTillTrain, "minutes")
+		console.log("ARRIVAL TIME: " + moment(nextTrainTime).format("hh:mm"))
+		var nextTrain = moment(nextTrainTime).format("hh:mm");
+
+  	database.ref().push({
   		name: trainName,
   		dest: destination,
-  		time: trainTime,
-  		freq: frequency
-  	}
-
-  	database.ref().push(newTrainInfo);
+  		next: nextTrain,
+  		freq: frequency,
+  		until: comingTrain
+  	})
 
   	$('#inputTrainName').val("");
   	$('#inputDestination').val("");
@@ -46,9 +71,10 @@ var minutesAway = "";
 
 	var newTrainName = childSnapshot.val().name;
 	var newDestination = childSnapshot.val().dest;
-	var newTrainTime = childSnapshot.val().time;
+	var nextOfficialTime = childSnapshot.val().next;
 	var newFrequency = childSnapshot.val().freq;
+	var untilNextTrain = childSnapshot.val().until;
 
-	$('#head').append("<tr><td>" + newTrainTime + "</td><td>" + newDestination + "</td><td>" + newTrainTime + "</td><td>" + newFrequency + "</td></tr>");
+	$('#head').append("<tr><td>" + newTrainName + "</td><td>" + newDestination + "</td><td>" + newFrequency + "</td><td>" + nextOfficialTime + "</td><td>" + untilNextTrain + "</td></tr>");
   });
 
